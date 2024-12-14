@@ -1,0 +1,35 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      # This action checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+
+    - name: Build Docker Image
+      run: docker-compose up --build
+      # This command builds your Docker container as defined in docker-compose.yml
+
+    - name: Run Tests
+      run: docker-compose run app pytest
+      # This command runs tests, replace 'pytest' with whatever test suite you use
+
+    - name: Push to Docker Hub (if necessary)
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: |
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        docker-compose push
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      # This command logs in to Docker Hub and pushes the Docker image. Credentials are stored as GitHub Secrets.
